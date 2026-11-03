@@ -1,7 +1,7 @@
 {
 	"name": "wc-mnm-filter",
 	"title": "WooCommerce Mix and Match Products - Filter",
-	"description": "Dynmamic Term Filtering for WooCommerce Mix and Match Products.",
+	"description": "Lets shoppers filter a Mix and Match container's products by category, tag or attribute.",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/kathyisawesome/wc-mnm-filter.git"
@@ -10,7 +10,7 @@
 		"url": "https://github.com/kathyisawesome/wc-mnm-filter/issues"
 	},
 	"license": "GPL-3.0-or-later",
-	"version": "2.2.0",
+	"version": "3.0.0",
 	"homepage": "https://github.com/kathyisawesome/wc-mnm-filter",
 	"main": "Gruntfile.js",
 	"devDependencies": {

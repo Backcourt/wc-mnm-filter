@@ -2,19 +2,20 @@
 /**
  * Plugin Name: WooCommerce Mix and Match - Filter by Terms
  * Plugin URI: https://woocommerce.com/products/woocommerce-mix-and-match-products
- * Description: Dynmamic Term Filtering for WooCommerce Mix and Match Products.
- * Version: 2.2.0
+ * Description: Lets shoppers filter a Mix and Match container's products by category, tag or attribute.
+ * Version: 3.0.0
  * Author: Kathy Darling
  * Author URI: http://kathyisawesome.com/
  *
  * Text Domain: wc-mnm-filter
  * Domain Path: /languages/
  *
- * Requires at least: 5.8
- * Tested up to: 6.0
+ * Requires at least: 6.2
+ * Tested up to: 6.8
+ * Requires PHP: 7.4
  *
- * WC requires at least: 7.0.0
- * WC tested up to: 7.5.0
+ * WC requires at least: 8.2.0
+ * WC tested up to: 10.3.0
  *
  * GitHub Plugin URI: https://github.com/kathyisawesome/wc-mnm-filter
  * Primary Branch: trunk
@@ -48,7 +49,7 @@ class WC_MNM_Filter {
 	 *
 	 * @var string
 	 */
-	public static $version = '2.2.0';
+	public static $version = '3.0.0';
 
 	/**
 	 * Required Mix and Match version.
