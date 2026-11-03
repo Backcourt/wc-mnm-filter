@@ -100,6 +100,12 @@ class WC_MNM_Filter {
 		add_action( 'wc_mnm_admin_product_options', array( __CLASS__, 'additional_container_option' ), 25, 2 );
 		add_action( 'woocommerce_admin_process_product_object', array( __CLASS__, 'process_meta' ), 20 );
 
+		/*
+		 * Import/Export.
+		 */
+		require_once self::plugin_path() . '/includes/class-wc-mnm-filter-import-export.php';
+		WC_MNM_Filter_Import_Export::init();
+
 		// Declare Features compatibility.
 		add_action( 'before_woocommerce_init', array( __CLASS__, 'declare_features_compatibility' ) );
 
