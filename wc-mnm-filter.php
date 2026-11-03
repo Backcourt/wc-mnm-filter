@@ -16,7 +16,7 @@
  * WC requires at least: 7.0.0
  * WC tested up to: 7.5.0
  *
- * GitHub Plugin URI: https://github.com/wc-mnm-filter
+ * GitHub Plugin URI: https://github.com/kathyisawesome/wc-mnm-filter
  * Primary Branch: trunk
  * Release Asset: true
  *
@@ -29,6 +29,17 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+use \Backcourt\MNMFilter\Vendor\Fragen;
+
+/**
+ * Add Git Updater Lite
+ */
+require_once __DIR__ . '/packages/autoload.php';
+add_filter( 'gul_update_server', function () {
+	return 'https://backcourt.io';
+});
+( new Fragen\Git_Updater\Lite( __FILE__ ) )->run();
 
 class WC_MNM_Filter {
 

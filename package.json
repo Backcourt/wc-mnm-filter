@@ -37,6 +37,9 @@
 	"scripts": {
 		"build": "grunt build",
 		"dev": "grunt dev",
-		"release": "grunt release"
+		"start": "grunt watch",
+		"makepot": "composer run-script makepot",
+		"betarelease": "npm run release",
+		"release": "npm run makepot && grunt release"
 	}
 }

@@ -11,8 +11,7 @@ sftp-config.json
 # Grunt
 /node_modules/
 /deploy/
-build/
-vendor/
+/build/
 npm-debug.log
 
 # Sass
@@ -32,11 +31,19 @@ Thumbs.db
 
 # Logs
 /logs
-package-lock.json
 composer.lock
 
 # Assets
-assets/js/frontend/*.min.js
-assets/js/admin/*.min.js
+assets/js/**/*.min.js
 assets/css/
 languages/
+
+# Editor
+.vscode/
+
+# Composer
+/vendor/*
+/packages/*
+
+# BrianHenryIE/Strauss - PHP Namespace Renamer
+bin/strauss.phar
