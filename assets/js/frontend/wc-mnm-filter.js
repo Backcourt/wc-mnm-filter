@@ -1,204 +1,315 @@
-  /**
-   * Main script.
-   */
-  ( function( $ ) {
+/**
+ * Mix and Match - Filter by Terms
+ *
+ * Hides the child items that don't match the selected terms. Starts with each container on the
+ * jQuery form's wc-mnm-initializing event. Hidden items keep their quantities, so they're still
+ * counted and added to the cart.
+ *
+ * @since   1.0.0
+ * @version 2.0.0
+ */
+/* global jQuery */
+( function ( $ ) {
+	'use strict';
 
-  /**
-   * Main container object.
-   */
-  function WC_MNM_Filter( container ) {
+	const params = window.WC_MNM_FILTER_PARAMS || {};
 
-    var filter = this;
+	const HIDDEN_CLASS = 'wc-mnm-filter-hidden';
 
-    this.$form        = container.$mnm_form;
-    this.$productWrap = this.$form.find( '.mnm_child_products' );
-    this.$products    = this.$productWrap.find( '.mnm_item' );
-    this.$categories  = this.$form.find( '.wc-mnm-filter-category-wrapper' );
-    this.$filter      = this.$form.find( '.mnm_filter_button_group' );
-    this.$showAll     = this.$filter.find( 'button[data-filter="*"]' );
-    this.$buttons     = this.$filter.find( 'button[data-filter!="*"]' );
-    this.taxonomy     = this.$filter.data( 'taxonomy' );
-    this.$error       = $( '<div style="display:none" class="mnm_filter_error"></div>' );
+	/**
+	 * Replace printf-style placeholders: %d, %1$d, %2$d.
+	 *
+	 * @param {string}    template
+	 * @param {...number} values
+	 * @return {string} The formatted string.
+	 */
+	function format( template, ...values ) {
+		let index = 0;
+		return String( template || '' ).replace( /%(?:(\d+)\$)?d/g, ( match, position ) => {
+			const value = position ? values[ position - 1 ] : values[ index++ ];
+			return undefined === value ? match : String( value );
+		} );
+	}
 
-    // @todo- When MNM supports custom data attrs, use that instead of classes.
-    this.classTerm = '.' + this.taxonomy + '-';
+	/**
+	 * Work around core's get_type() before Mix and Match 3.0.
+	 *
+	 * Older versions detect fixed quantity items with `:hidden`, so an item hidden by the filter
+	 * (display: none) would count as fixed and "Clear selections" would skip it. Swap in the
+	 * 3.0 check, which looks at the input's type instead. Newer core is left alone.
+	 *
+	 * @param {Object} childItem The WC_MNM_Child_Item from add-to-cart-mnm.js.
+	 */
+	function patchGetType( childItem ) {
+		if ( 'function' !== typeof childItem.get_type || -1 === String( childItem.get_type ).indexOf( ':hidden' ) ) {
+			return;
+		}
 
-    /**
-     * Object initialization.
-     */
-    this.initialize = function() {
+		childItem.get_type = function () {
+			const $qty = this.$mnm_item_qty;
 
-      /**
-       * Remove empty buttons.
-       */
-      this.hide_empty_buttons();
+			if ( $qty.is( ':checkbox' ) ) {
+				return 'checkbox';
+			}
+			if ( $qty.is( 'select' ) ) {
+				return 'select';
+			}
+			if ( $qty.is( '[type="hidden"]' ) ) {
+				return 'hidden';
+			}
+			return 'input';
+		};
+	}
 
-      /**
-       * Bind event handlers.
-       */
-      this.bind_event_handlers();
+	/**
+	 * Read a child item's term slugs from the item wrapper, or the hidden .mnm-item-data element some templates use.
+	 *
+	 * @param {jQuery} $item
+	 * @return {string[]} Term slugs.
+	 */
+	function getItemTerms( $item ) {
+		let terms = $item.attr( 'data-filter_terms' );
 
-      /**
-       * Display filter.
-       */  
-      this.maybe_display();
+		if ( undefined === terms ) {
+			terms = $item.find( '.mnm-item-data' ).attr( 'data-filter_terms' );
+		}
 
-      /**
-       * Insert error notice.
-       */
-      this.$error.html( WC_MNM_FILTER_PARAMS.i18n_no_matches ).hide().insertAfter( this.$filter );
+		return String( terms || '' ).split( ' ' ).filter( Boolean );
+	}
 
-    };
+	/**
+	 * Find the category caption for an item wrapper.
+	 *
+	 * Other elements can sit between them, such as core's skip link target before the first wrapper,
+	 * so look back until the caption, the previous wrapper or the filter.
+	 *
+	 * @param {Element} wrapper The .mnm_child_products element.
+	 * @return {Element|null} The caption wrapper, if any.
+	 */
+	function getCaption( wrapper ) {
+		let el = wrapper.previousElementSibling;
 
+		while ( el ) {
+			if ( el.classList.contains( 'wc-mnm-filter-category-wrapper' ) ) {
+				return el;
+			}
+			if ( el.classList.contains( 'mnm_child_products' ) || el.classList.contains( 'wc-mnm-filter' ) ) {
+				return null;
+			}
+			el = el.previousElementSibling;
+		}
 
-    /**
-     * Remove empty buttons before display.
-     */
-    this.hide_empty_buttons = function() {
+		return null;
+	}
 
-      var count_visible = 0;
+	/**
+	 * Filter for one container.
+	 *
+	 * @param {Object} container The WC_MNM_Container from add-to-cart-mnm.js.
+	 */
+	function WC_MNM_Filter( container ) {
+		const $form = container.$mnm_form;
+		const form = $form.get( 0 );
+		const root = form ? form.querySelector( '.wc-mnm-filter' ) : null;
 
-      $( '.mnm_filter_button_group button' ).each( function () {
-        
-        var filterValue = $(this).data( 'filter' );
+		if ( ! root || root.dataset.initialized ) {
+			return;
+		}
 
-        // Skip the "show all" button.
-        if ( '*' === filterValue ) {
-          return true;
-        }
+		root.dataset.initialized = 'yes';
 
-        if ( ! filter.$products.filter( filter.classTerm + filterValue ).length ) {
-          $(this).remove();
-        } else {
-          count_visible++;
-        }
+		// $.map works whether child_items is an array or an object keyed by index.
+		const items = $.map( container.child_items || [], ( childItem ) => {
+			patchGetType( childItem );
 
-      });
+			return {
+				childItem,
+				el: childItem.$self.get( 0 ),
+				terms: getItemTerms( childItem.$self ),
+			};
+		} );
 
-      filter.$filter.data( 'visible', count_visible );
+		// Remove buttons that wouldn't show anything, eg terms added with the wc_mnm_filter_terms filter.
+		root.querySelectorAll( '.wc-mnm-filter__button:not([data-filter="*"])' ).forEach( ( button ) => {
+			if ( ! items.some( ( item ) => item.terms.includes( button.dataset.filter ) ) ) {
+				button.remove();
+			}
+		} );
 
-    };
+		const buttons = root.querySelectorAll( '.wc-mnm-filter__button' );
 
+		// Show all plus at least two terms, or there's nothing to filter.
+		if ( buttons.length < 3 ) {
+			return;
+		}
 
-    /**
-     * Events.
-     */
+		root.hidden = false;
 
-    this.bind_event_handlers = function() {
-      this.$filter.on( 'click', 'button', this.filter );
-    };
+		const multiple = 'yes' === root.dataset.multiple;
+		const status = root.querySelector( '.wc-mnm-filter__status' );
+		const noResults = root.querySelector( '.wc-mnm-filter__no-results' );
+		const hiddenSelections = root.querySelector( '.wc-mnm-filter__hidden-selections' );
+		const active = new Set();
 
-    /**
-     * Filter the products.
-     */
+		/**
+		 * Whether an item matches the selected terms. Items matching any selected term are shown.
+		 *
+		 * @param {Object} item
+		 * @return {boolean} True when nothing is selected or the item has a selected term.
+		 */
+		const matches = ( item ) => 0 === active.size || item.terms.some( ( term ) => active.has( term ) );
 
-    this.filter = function(e) {
+		/**
+		 * Restore the WooCommerce loop's first and last classes for themes with float grids.
+		 *
+		 * @param {Element} wrapper
+		 */
+		const updateGridClasses = ( wrapper ) => {
+			const match = wrapper.className.match( /\bcolumns-(\d+)\b/ );
+			const columns = match ? parseInt( match[ 1 ], 10 ) : 0;
 
-      e.preventDefault();
+			if ( ! columns ) {
+				return;
+			}
 
-      let supportsMulti = filter.$form.data('filter-multi_terms') || false;
+			let index = 0;
 
-      if ( ! supportsMulti ) {
-        filter.$buttons.removeClass( 'selected' );
-      }
+			wrapper.querySelectorAll( '.mnm_item' ).forEach( ( el ) => {
+				el.classList.remove( 'first', 'last' );
 
-      $(this).toggleClass( 'selected' );
+				if ( el.classList.contains( HIDDEN_CLASS ) ) {
+					return;
+				}
 
-      // Get all selected terms.
-      var $selected = filter.$buttons.filter( '.selected' );
-       
-      // If "show all" (or no selection) remove classes and show all products.
-      if ( '*' === $(this).data( 'filter' ) || $selected.length === 0 ) {
+				if ( 0 === index % columns ) {
+					el.classList.add( 'first' );
+				}
+				if ( 0 === ( index + 1 ) % columns ) {
+					el.classList.add( 'last' );
+				}
+				index++;
+			} );
+		};
 
-        filter.$buttons.removeClass( 'selected' );
-        filter.$showAll.addClass( 'selected' );
-        filter.$productWrap.show();
-        filter.$categories.show();
-        filter.$products.show();
-        filter.$error.hide();
+		/**
+		 * Note how many selected items the filter hides, so shoppers aren't surprised by the total.
+		 */
+		const updateHiddenSelections = () => {
+			const quantity = items.reduce( ( total, item ) => {
+				return total + ( matches( item ) ? 0 : parseFloat( item.childItem.get_quantity() ) || 0 );
+			}, 0 );
 
-      } else {
+			hiddenSelections.textContent = '';
+			hiddenSelections.hidden = 0 === quantity;
 
-        var findClass = [];
+			if ( quantity ) {
+				const button = document.createElement( 'button' );
+				button.type = 'button';
+				button.className = 'wc-mnm-filter__show-all-link';
+				button.textContent = params.i18n_show_all;
+				button.addEventListener( 'click', () => select( '*' ) );
 
-        filter.$showAll.removeClass( 'selected' );
+				hiddenSelections.append(
+					format( 1 === quantity ? params.i18n_hidden_single : params.i18n_hidden_plural, quantity ),
+					' ',
+					button
+				);
+			}
+		};
 
-        $selected.each( function() {
-          findClass.push( filter.classTerm + $(this).data( 'filter' ) );
-        });
+		/**
+		 * Show the matching items.
+		 *
+		 * @param {boolean} announce Whether to update the screen reader status.
+		 */
+		const apply = ( announce ) => {
+			buttons.forEach( ( button ) => {
+				const pressed = '*' === button.dataset.filter ? 0 === active.size : active.has( button.dataset.filter );
+				button.setAttribute( 'aria-pressed', pressed ? 'true' : 'false' );
+				button.classList.toggle( 'selected', pressed );
+			} );
 
-        // Find matching products.
-        var $matches = filter.$products.filter( findClass.join('') );
+			let shown = 0;
 
-        if ( $matches.length ) {
-          filter.$productWrap.show();
-          filter.$error.hide();
-        } else {
-          filter.$productWrap.hide();
-          filter.$error.show();
-        }
+			items.forEach( ( item ) => {
+				const show = matches( item );
+				item.el.classList.toggle( HIDDEN_CLASS, ! show );
+				shown += show ? 1 : 0;
+			} );
 
-        // Show matching products.
-        filter.$products.hide();
-        $matches.show();
+			// Hide item wrappers, and their category captions, without any matches.
+			form.querySelectorAll( '.mnm_child_products' ).forEach( ( wrapper ) => {
+				const hasMatches = !! wrapper.querySelector( `.mnm_item:not(.${ HIDDEN_CLASS })` );
+				const caption = getCaption( wrapper );
 
-        // Show non-empty categories.
-        filter.$categories.hide();
+				wrapper.classList.toggle( HIDDEN_CLASS, ! hasMatches );
 
-        if ( filter.$productWrap.find( '.mnm_item:visible' ).length ) {
-          filter.$productWrap.each( function() {
-            if ( $(this).find( '.mnm_item:visible' ).length ) {
-              $(this).prev( '.wc-mnm-filter-category-wrapper' ).show();
-            }
-          });
-        }
+				if ( caption ) {
+					caption.classList.toggle( HIDDEN_CLASS, ! hasMatches );
+				}
 
-      }
+				if ( form.classList.contains( 'layout_grid' ) ) {
+					updateGridClasses( wrapper );
+				}
+			} );
 
-      // Fix grid layout classes.
-      if ( filter.$form.hasClass( 'layout_grid' ) ) {
+			noResults.hidden = shown > 0;
 
-        var columns = filter.$form.data('filter-columns') || 3;
+			if ( announce ) {
+				status.textContent = 0 === active.size ?
+					format( params.i18n_status_all, items.length ) :
+					format( params.i18n_status, shown, items.length );
+			}
 
-        // Restore first/last loop classes
-        filter.$products.removeClass( 'first' ).removeClass( 'last' );
+			updateHiddenSelections();
 
-        filter.$products.filter( ':visible' ).each( function (i) {
-          if ( 0 === i || 0 === (i+1) % columns ) {
-            $(this).addClass( 'first' );
-          }
-          if ( 0 === (i+1) % columns ) {
-            $(this).addClass( 'last' );
-          }
-        });
+			$form.trigger( 'wc-mnm-filters-updated', [ container, Array.from( active ) ] );
+		};
 
-      }
+		/**
+		 * Select a term, or "*" for all. Multi-select toggles each term, single-select toggles the one term.
+		 *
+		 * @param {string} term
+		 */
+		const select = ( term ) => {
+			if ( '*' === term ) {
+				active.clear();
+			} else if ( multiple ) {
+				if ( active.has( term ) ) {
+					active.delete( term );
+				} else {
+					active.add( term );
+				}
+			} else {
+				const isOnlySelection = active.has( term ) && 1 === active.size;
+				active.clear();
+				if ( ! isOnlySelection ) {
+					active.add( term );
+				}
+			}
 
-    };
+			apply( true );
+		};
 
-    /**
-     * Remove empty buttons before display.
-     */
-    this.maybe_display = function() {
+		root.addEventListener( 'click', ( event ) => {
+			const button = event.target.closest( '.wc-mnm-filter__button' );
 
-      // Only show "show all" if other buttons exist.
-      if ( filter.$filter.data( 'visible' ) ) {
-        filter.$filter.show();
-      }
+			if ( button && root.contains( button ) ) {
+				event.preventDefault();
+				select( button.dataset.filter );
+			}
+		} );
 
-    };
+		$form.on( 'wc-mnm-container-quantities-updated', updateHiddenSelections );
 
-    // Launch.
-    this.initialize();
+		apply( false );
+	}
 
-  } // End WC_MNM_Filter.
+	/*-----------------------------------------------------------------*/
+	/*  Initialization.                                                */
+	/*-----------------------------------------------------------------*/
 
-  /*-----------------------------------------------------------------*/
-  /*  Initialization.                                                */
-  /*-----------------------------------------------------------------*/
-
-  $( 'body' ).on( 'wc-mnm-initializing', function( e, container ) {
-    new WC_MNM_Filter( container );
-  });
-
-} ) ( jQuery );
+	$( document.body ).on( 'wc-mnm-initializing', ( event, container ) => {
+		new WC_MNM_Filter( container ); // eslint-disable-line no-new
+	} );
+} )( jQuery );

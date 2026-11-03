@@ -1,0 +1,112 @@
+/**
+ * Mix and Match - Filter by Terms
+ *
+ * @since 2.0.0
+ */
+
+.wc-mnm-filter {
+	/* Lets the buttons scroll instead of widening a grid or flex form. */
+	min-width: 0;
+	max-width: 100%;
+	contain: inline-size;
+	margin: 0 0 1.5em;
+}
+
+.wc-mnm-filter__label {
+	display: block;
+	margin: 0 0 0.5em;
+	font-weight: 600;
+}
+
+.wc-mnm-filter__buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em;
+	margin: 0;
+	padding: 0;
+}
+
+/*
+ * Chips, like the package selector and WooCommerce's attribute chips. They follow the theme's text colour,
+ * and the --wc-product-filter-chips-* variables override them when something sets them.
+ * The resets beat theme styles for plain buttons, ex: Storefront's button rules.
+ */
+.wc-mnm-filter .wc-mnm-filter__button {
+	appearance: none;
+	background: var(--wc-product-filter-chips-background, transparent);
+	border: 1px solid var(--wc-product-filter-chips-border, color-mix(in srgb, currentColor 40%, transparent));
+	border-radius: var(--wc-product-filter-chips-radius, 2px);
+	box-shadow: none;
+	box-sizing: border-box;
+	color: var(--wc-product-filter-chips-text, inherit);
+	cursor: pointer;
+	flex: 0 0 auto;
+	font: inherit;
+	font-weight: 600;
+	letter-spacing: inherit;
+	line-height: 1.5;
+	margin: 0;
+	min-height: 0;
+	padding: 0.4em 0.75em;
+	text-decoration: none;
+	text-transform: none;
+	transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+	white-space: nowrap;
+}
+
+.wc-mnm-filter .wc-mnm-filter__button:hover {
+	border-color: var(--wc-product-filter-chips-text, currentColor);
+}
+
+.wc-mnm-filter .wc-mnm-filter__button[aria-pressed="true"] {
+	background: var(--wc-product-filter-chips-selected-background, var(--wc-product-filter-chips-text, CanvasText));
+	border-color: var(--wc-product-filter-chips-selected-border, var(--wc-product-filter-chips-text, CanvasText));
+	color: var(--wc-product-filter-chips-selected-text, var(--wc-product-filter-chips-background, Canvas));
+}
+
+.wc-mnm-filter .wc-mnm-filter__button:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+.wc-mnm-filter__hidden-selections {
+	margin: 0.75em 0 0;
+	font-size: 0.875em;
+}
+
+.wc-mnm-filter__show-all-link {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.wc-mnm-filter__no-results {
+	margin: 1em 0 0;
+}
+
+/* One scrolling row on small screens, instead of several rows of buttons pushing the products down. */
+@media (max-width: 600px) {
+
+	.wc-mnm-filter__buttons {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		padding-bottom: 0.25em;
+		scroll-snap-type: x proximity;
+		scrollbar-width: thin;
+	}
+
+	.wc-mnm-filter__button {
+		scroll-snap-align: start;
+	}
+}
+
+/* Beats theme rules such as `ul.products li.product { display: block }`. */
+.wc-mnm-filter[hidden],
+.wc-mnm-filter [hidden],
+.mnm_form .wc-mnm-filter-hidden {
+	display: none !important;
+}
