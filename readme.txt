@@ -39,5 +39,5 @@ Show buttons above a Mix and Match container's child items so shoppers can filte
 * Fix: Before Mix and Match 3.0, "Clear selections" skipped items hidden by the filter because core treated them as fixed quantity items. The filter now corrects core's item type check on older versions.
 * Dev: New `wc-mnm-filters-updated` event on the form, with the container and the selected terms.
 * Dev: New `wc_mnm_filter_terms`, `wc_mnm_filter_taxonomies` and `wc_mnm_filter_taxonomy` filters.
-* Dev: Git Updater Lite, prefixed into `packages/` with a Strauss phar, handles updates from GitHub releases. The release workflow uses the latest GitHub actions, skips Composer dev packages, builds the .pot with WP-CLI and takes release notes from this changelog.
+* Dev: Git Updater Lite, prefixed into `vendor-prefixed/` with a Strauss phar, handles updates from GitHub releases. The release workflow uses the latest GitHub actions, skips Composer dev packages, builds the .pot with WP-CLI and takes release notes from this changelog.
 * Dev: Build CSS with Dart Sass instead of node-sass.

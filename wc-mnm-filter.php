@@ -11,15 +11,13 @@
  * Domain Path: /languages/
  *
  * Requires at least: 6.2
- * Tested up to: 6.8
+ * Tested up to: 7.1.0
  * Requires PHP: 7.4
  *
  * WC requires at least: 8.2.0
- * WC tested up to: 10.3.0
+ * WC tested up to: 11.2.0
  *
- * GitHub Plugin URI: https://github.com/kathyisawesome/wc-mnm-filter
- * Primary Branch: trunk
- * Release Asset: true
+ * Update URI: https://www.backcourt.io/
  *
  * Copyright: © 2023 Kathy Darling
  * License: GNU General Public License v3.0
@@ -33,14 +31,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use \Backcourt\MNMFilter\Vendor\Fragen;
 
-/**
- * Add Git Updater Lite
- */
-require_once __DIR__ . '/packages/autoload.php';
-add_filter( 'gul_update_server', function () {
-	return 'https://backcourt.io';
-});
-( new Fragen\Git_Updater\Lite( __FILE__ ) )->run();
+ /**
+  * Add Git Updater Lite
+  */
+ if ( file_exists( __DIR__ . '/vendor-prefixed/autoload.php' ) ) {
+	require_once __DIR__ . '/vendor-prefixed/autoload.php';
+
+	if ( class_exists( Fragen\Git_Updater\Lite::class ) ) {
+		( new Fragen\Git_Updater\Lite( __FILE__ ) )->run();
+	}
+
+}
 
 class WC_MNM_Filter {
 

@@ -19,7 +19,7 @@ jobs:
     # - Get Composer Cache Directory.
     # - Sets up Composer Caching.
     # - Logs debug information.
-    # - Install Composer dependencies without development dependencies. Strauss (downloaded as a phar) prefixes them into packages/.
+    # - Install Composer dependencies without development dependencies. Strauss (downloaded as a phar) prefixes them into vendor-prefixed/.
     # - Setup NodeJS.
     # - Install NPM dependencies.
     # - Get release version.
@@ -132,7 +132,7 @@ jobs:
                     exit 1
                   fi
                   files="$(unzip -Z1 "$zip")"
-                  for file in packages/autoload.php assets/js/frontend/wc-mnm-filter.min.js assets/css/frontend/wc-mnm-filter.min.css languages/${{ env.release_name }}.pot; do
+                  for file in vendor-prefixed/autoload.php assets/js/frontend/wc-mnm-filter.min.js assets/css/frontend/wc-mnm-filter.min.css languages/${{ env.release_name }}.pot; do
                     if ! echo "$files" | grep -qx "$dir/$file"; then
                       echo "::error::$file is missing from the release zip."
                       exit 1

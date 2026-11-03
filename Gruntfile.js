@@ -239,7 +239,7 @@ module.exports = function(grunt) {
 			},
 			target: {
 				files: {
-					src: ['*.php', '**/*.php', '**/**/*.php', '!node_modules/**', '!deploy/**', '!build/**', '!vendor/**', '!packages/**']
+					src: ['*.php', '**/*.php', '**/**/*.php', '!node_modules/**', '!deploy/**', '!build/**', '!vendor/**', '!vendor-prefixed/**']
 				}
 			}
 		},

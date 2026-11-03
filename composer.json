@@ -1,70 +1,70 @@
 {
-	"name": "kathyisawesome/wc-mnm-filter",
-	"description": "Lets shoppers filter a Mix and Match container's products by category, tag or attribute.",
-	"homepage": "https://github.com/kathyisawesome/wc-mnm-filter",
-	"type": "wordpress-plugin",
-	"license": "GPL-3.0-or-later",
-	"authors": [
-		{
-			"name": "helgatheviking",
-			"email": "507025+helgatheviking@users.noreply.github.com"
-		}
-	],
-	"support": {
-		"source": "https://github.com/kathyisawesome/wc-mnm-filter",
-		"issues": "https://github.com/kathyisawesome/wc-mnm-filter/issues"
-	},
-	"require": {
-		"afragen/git-updater-lite": "^1"
-	},
-	"require-dev": {
-		"woocommerce/woocommerce-sniffs": "^1.0",
-		"wp-cli/i18n-command": "^2.6"
-	},
-	"scripts": {
-		"makepot-audit": [
-			"wp --allow-root i18n make-pot . languages/wc-mnm-filter.pot --slug=wc-mnm-filter --exclude=\".github,.wordpress-org,build,deploy,node_modules,packages,vendor\" --headers='{\"Report-Msgid-Bugs-To\":\"https://github.com/kathyisawesome/wc-mnm-filter/issues/new\"}'"
-		],
-		"makepot": [
-			"@makepot-audit --skip-audit"
-		],
-		"phpcs": [
-			"phpcs . -s -p -n"
-		],
-		"phpcb": [
-			"phpcbf . "
-		],
-		"prefix-namespaces": [
-			"sh -c 'test -f bin/strauss.phar || { mkdir -p bin && curl -fL -o bin/strauss.phar https://github.com/BrianHenryIE/strauss/releases/latest/download/strauss.phar; }'",
-			"@php bin/strauss.phar",
-			"@composer dump-autoload"
-		],
-		"post-install-cmd": [
-			"@prefix-namespaces"
-		],
-		"post-update-cmd": [
-			"@prefix-namespaces"
-		]
-	},
-	"config": {
-		"allow-plugins": {
-			"composer/installers": true,
-			"dealerdirect/phpcodesniffer-composer-installer": true
-		}
-	},
-	"extra": {
-		"scripts-description": {
-			"makepot": "Generate a .pot file for translation",
-			"makepot-audit": "Generate a .pot file for translation. Dry run.",
-			"phpcs": "Analyze code against the WordPress coding standards with PHP_CodeSniffer",
-			"phpcb": "Fix coding standards warnings/errors automatically with PHP Code Beautifier",
-			"prefix-namespaces": "Download the latest Strauss phar (if needed) and prefix shipped Composer packages into packages/"
-		},
-		"strauss": {
-			"target_directory": "packages",
-			"namespace_prefix": "Backcourt\\MNMFilter\\Vendor",
-			"classmap_prefix": "Backcourt_MNM_Filter_Vendor_",
-			"constant_prefix": "BCMNMF_"
-		}
-	}
+  "name": "backcourt/wc-mnm-filter",
+  "description": "Lets shoppers filter a Mix and Match container's products by category, tag or attribute.",
+  "homepage": "https://github.com/backcourt/wc-mnm-filter",
+  "type": "wordpress-plugin",
+  "license": "GPL-3.0-or-later",
+  "authors": [
+    {
+      "name": "helgatheviking",
+      "email": "507025+helgatheviking@users.noreply.github.com"
+    }
+  ],
+  "support": {
+    "source": "https://github.com/backcourt/wc-mnm-filter",
+    "issues": "https://github.com/backcourt/wc-mnm-filter/issues"
+  },
+  "require": {
+    "afragen/git-updater-lite": "^3"
+  },
+  "require-dev": {
+    "woocommerce/woocommerce-sniffs": "^1.0",
+    "wp-cli/i18n-command": "^2.6"
+  },
+  "scripts": {
+    "makepot-audit": [
+      "wp --allow-root i18n make-pot . languages/wc-mnm-filter.pot --slug=wc-mnm-filter --exclude=\".github,.wordpress-org,build,deploy,node_modules,vendor-prefixed,vendor\" --headers='{\"Report-Msgid-Bugs-To\":\"https://github.com/backcourt/wc-mnm-filter/issues/new\"}'"
+    ],
+    "makepot": [
+      "@makepot-audit --skip-audit"
+    ],
+    "phpcs": [
+      "phpcs . -s -p -n"
+    ],
+    "phpcb": [
+      "phpcbf . "
+    ],
+    "prefix-namespaces": [
+      "sh -c 'test -f bin/strauss.phar || { mkdir -p bin && curl -fL -o bin/strauss.phar https://github.com/BrianHenryIE/strauss/releases/latest/download/strauss.phar; }'",
+      "@php bin/strauss.phar",
+      "@composer dump-autoload"
+    ],
+    "post-install-cmd": [
+      "@prefix-namespaces"
+    ],
+    "post-update-cmd": [
+      "@prefix-namespaces"
+    ]
+  },
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true,
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  },
+  "extra": {
+    "scripts-description": {
+      "makepot": "Generate a .pot file for translation",
+      "makepot-audit": "Generate a .pot file for translation. Dry run.",
+      "phpcs": "Analyze code against the WordPress coding standards with PHP_CodeSniffer",
+      "phpcb": "Fix coding standards warnings/errors automatically with PHP Code Beautifier",
+      "prefix-namespaces": "Download the latest Strauss phar (if needed) and prefix shipped Composer packages into vendor-prefixed/"
+    },
+    "strauss": {
+      "target_directory": "vendor-prefixed",
+      "namespace_prefix": "Backcourt\\MNMFilter\\Vendor",
+      "classmap_prefix": "Backcourt_MNM_Filter_Vendor_",
+      "constant_prefix": "BCMNMF_"
+    }
+  }
 }

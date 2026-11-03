@@ -43,7 +43,7 @@ languages/
 
 # Composer
 /vendor/*
-/packages/*
+/vendor-prefixed/*
 
 # BrianHenryIE/Strauss - PHP Namespace Renamer
 bin/strauss.phar
