@@ -4,8 +4,8 @@
  * Plugin URI: https://woocommerce.com/products/woocommerce-mix-and-match-products
  * Description: Lets shoppers filter a Mix and Match container's products by category, tag or attribute.
  * Version: 3.0.0
- * Author: Kathy Darling
- * Author URI: http://kathyisawesome.com/
+ * Author: Backcourt Development
+ * Author URI: https://www.backcourt.io/
  *
  * Text Domain: wc-mnm-filter
  * Domain Path: /languages/
@@ -19,7 +19,7 @@
  *
  * Update URI: https://www.backcourt.io/
  *
- * Copyright: © 2023 Kathy Darling
+ * Copyright: © 2023 Backcourt Development
  * License: GNU General Public License v3.0
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
  */

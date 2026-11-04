@@ -16,7 +16,7 @@
  * package selector and WooCommerce's attribute chips, so they don't use the theme's button classes.
  *
  * @see     https://woocommerce.com/document/template-structure/
- * @author  Kathy Darling
+ * @author  Backcourt Development
  * @package WooCommerce Mix and Match Filter/Templates
  * @since   1.0.0
  * @version 3.0.0
