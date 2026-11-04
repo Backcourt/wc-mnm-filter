@@ -28,6 +28,7 @@ Show buttons above a Mix and Match container's child items so shoppers can filte
 * New: Accessible buttons with `aria-pressed` in a labelled group, a "Showing %1$d of %2$d products" status for screen readers, and WooCommerce's "No products were found matching your selection." message.
 * New: Category sections and their titles hide when none of their items match.
 * New: Tabular layout support.
+* New: With WordPress 6.5+ and Mix and Match 3.0, the filter runs on the Interactivity API (script module `@wc-mnm-filter/filter`, store namespace `wc-mnm-filter`) and reads selections from Mix and Match's container store. The jQuery script is kept for older versions and for forms loaded with ajax. Return false from `wc_mnm_filter_is_interactive` to keep the jQuery script.
 * New: On small screens, the buttons stay in one row that scrolls sideways.
 * New: "MnM Filter Taxonomy" column in the product CSV importer and exporter. An empty cell leaves the product unchanged, `none` removes the filter.
 * Update: The buttons are styled as chips, like the package selection and WooCommerce's attribute chips, with a visible "Filter by {taxonomy}" label. They no longer use the theme's button classes, and the `--wc-product-filter-chips-*` variables restyle them.

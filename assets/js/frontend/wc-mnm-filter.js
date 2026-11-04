@@ -1,12 +1,13 @@
 /**
  * Mix and Match - Filter by Terms
  *
- * Hides the child items that don't match the selected terms. Starts with each container on the
- * jQuery form's wc-mnm-initializing event. Hidden items keep their quantities, so they're still
- * counted and added to the cart.
+ * Hides the child items that don't match the selected terms. The fallback for the Interactivity API
+ * module (assets/js/modules/wc-mnm-filter.js), used before WordPress 6.5 or Mix and Match 3.0 and in
+ * forms loaded with ajax. Starts with each container on the jQuery form's wc-mnm-initializing event.
+ * Hidden items keep their quantities, so they're still counted and added to the cart.
  *
  * @since   1.0.0
- * @version 2.0.0
+ * @version 3.0.0
  */
 /* global jQuery */
 ( function ( $ ) {
@@ -112,7 +113,8 @@
 		const form = $form.get( 0 );
 		const root = form ? form.querySelector( '.wc-mnm-filter' ) : null;
 
-		if ( ! root || root.dataset.initialized ) {
+		// Filters printed with Interactivity API directives belong to the wc-mnm-filter script module.
+		if ( ! root || root.dataset.initialized || root.hasAttribute( 'data-wp-interactive' ) ) {
 			return;
 		}
 

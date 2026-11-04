@@ -74,6 +74,13 @@ class WC_MNM_Filter {
 	const HANDLE = 'wc-mnm-filter';
 
 	/**
+	 * Interactivity API script module ID.
+	 *
+	 * @var string
+	 */
+	const MODULE = '@wc-mnm-filter/filter';
+
+	/**
 	 * Term slugs per child product, per taxonomy.
 	 *
 	 * @var array
@@ -231,7 +238,28 @@ class WC_MNM_Filter {
 			return;
 		}
 
-		$terms = self::get_terms( $product, $taxonomy );
+		// Each child product's term slugs, keyed by product ID.
+		$items = array();
+
+		foreach ( $product->get_child_items() as $child_item ) {
+			$child_product = $child_item->get_product();
+
+			if ( $child_product ) {
+				$items[ $child_product->get_id() ] = self::get_item_term_slugs( $child_product, $taxonomy );
+			}
+		}
+
+		$used_slugs = $items ? array_unique( array_merge( ...array_values( $items ) ) ) : array();
+
+		// Leave out buttons that wouldn't show anything, ex: terms added with the wc_mnm_filter_terms filter.
+		$terms = array_values(
+			array_filter(
+				self::get_terms( $product, $taxonomy ),
+				function ( $filter_term ) use ( $used_slugs ) {
+					return $filter_term instanceof WP_Term && in_array( $filter_term->slug, $used_slugs, true );
+				}
+			)
+		);
 
 		// A single button filters nothing.
 		if ( count( $terms ) < 2 ) {
@@ -239,8 +267,16 @@ class WC_MNM_Filter {
 		}
 
 		$taxonomy_object = get_taxonomy( $taxonomy );
+		$multiple        = self::supports_multiple_terms( $product );
 
-		self::load_scripts();
+		// Forms loaded with ajax, ex: quick view, aren't hydrated by the Interactivity API, so they use the jQuery script.
+		$interactive = self::is_interactive() && ! wp_doing_ajax();
+
+		if ( $interactive ) {
+			self::load_module();
+		} else {
+			self::load_scripts();
+		}
 
 		wc_get_template(
 			'single-product/mnm/options-filter.php',
@@ -249,8 +285,17 @@ class WC_MNM_Filter {
 				'taxonomy'       => $taxonomy,
 				'taxonomy_label' => $taxonomy_object ? $taxonomy_object->labels->singular_name : '',
 				'terms'          => $terms,
-				'multiple'       => self::supports_multiple_terms( $product ),
+				'multiple'       => $multiple,
 				'layout'         => $product->get_layout(),
+				'interactive'    => $interactive,
+				'context'        => array(
+					'containerId' => $product->get_id(),
+					'multiple'    => $multiple,
+					'items'       => (object) $items, // An object, even when the keys are sequential.
+					'active'      => array(),
+					'isReady'     => false,
+					'status'      => '',
+				),
 			),
 			'',
 			self::plugin_path() . '/templates/'
@@ -431,6 +476,18 @@ class WC_MNM_Filter {
 	public static function register_scripts() {
 		$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
 
+		if ( self::is_interactive() ) {
+			$module_path = 'assets/js/modules/wc-mnm-filter.js';
+
+			// Native ES module. Its imports resolve through the import map, so there is no build step.
+			wp_register_script_module(
+				self::MODULE,
+				plugins_url( $module_path, __FILE__ ),
+				array( '@wordpress/interactivity', \Backcourt\MixAndMatch\Interactivity\ContainerStore::MODULE ),
+				WC_Mix_and_Match()->get_file_version( self::plugin_path() . '/' . $module_path, self::$version )
+			);
+		}
+
 		$script_path    = 'assets/js/frontend/wc-mnm-filter' . $suffix . '.js';
 		$script_version = WC_Mix_and_Match()->get_file_version( self::plugin_path() . '/' . $script_path, self::$version );
 
@@ -486,6 +543,72 @@ class WC_MNM_Filter {
 		}
 		wp_enqueue_style( self::HANDLE );
 		wp_enqueue_script( self::HANDLE );
+	}
+
+	/**
+	 * Enqueue the Interactivity API module and the stylesheet.
+	 *
+	 * @since 3.0.0
+	 */
+	public static function load_module() {
+		if ( ! wp_style_is( self::HANDLE, 'registered' ) ) {
+			self::register_scripts();
+		}
+
+		wp_enqueue_style( self::HANDLE );
+		wp_enqueue_script_module( self::MODULE );
+
+		wp_interactivity_config(
+			'wc-mnm-filter',
+			array(
+				'i18n' => array(
+					/* translators: %1$d: Number of products shown. %2$d: Total number of products. */
+					'status'       => __( 'Showing %1$d of %2$d products', 'wc-mnm-filter' ),
+					/* translators: %d: Total number of products. */
+					'statusAll'    => __( 'Showing all %d products', 'wc-mnm-filter' ),
+					/* translators: %d: Number of selected items hidden by the filter. */
+					'hiddenSingle' => __( '%d selected item is hidden by the filter.', 'wc-mnm-filter' ),
+					/* translators: %d: Number of selected items hidden by the filter. */
+					'hiddenPlural' => __( '%d selected items are hidden by the filter.', 'wc-mnm-filter' ),
+				),
+			)
+		);
+
+		// Derived state for directives processed on the server, ex: in block themes. WordPress 6.6+ evaluates closures.
+		if ( function_exists( 'wp_interactivity_get_context' ) ) {
+			wp_interactivity_state(
+				'wc-mnm-filter',
+				array(
+					'isPressed' => function () {
+						$context = wp_interactivity_get_context();
+						$term    = isset( $context['term'] ) ? $context['term'] : '';
+						$active  = isset( $context['active'] ) ? (array) $context['active'] : array();
+
+						return '*' === $term ? empty( $active ) : in_array( $term, $active, true );
+					},
+				)
+			);
+		}
+	}
+
+	/**
+	 * Whether the filter runs on the Interactivity API, with Mix and Match's container store.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return bool
+	 */
+	public static function is_interactive() {
+		$supported = class_exists( '\Backcourt\MixAndMatch\Interactivity\ContainerStore' ) && \Backcourt\MixAndMatch\Interactivity\ContainerStore::is_supported();
+
+		/**
+		 * Whether the filter runs on the Interactivity API. Return false to keep the jQuery script.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param bool $supported True with WordPress 6.5+ and Mix and Match's container store.
+		 */
+		return $supported && (bool) apply_filters( 'wc_mnm_filter_is_interactive', $supported );
 	}
 
 	/*-----------------------------------------------------------------------------------*/
