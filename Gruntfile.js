@@ -89,66 +89,7 @@ module.exports = function(grunt) {
 			}
 		},
 
-		// Minify .js files.
-		uglify: {
-			options: {
-				banner: '/*! <%= pkg.title %> <%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd HH:MM") %> */\n',
-				ie8: true,
-				parse: {
-					strict: false
-				},
-				output: {
-					comments : /@license|@preserve|^!/
-				}
-			},
-			admin: {
-				files: [{
-					expand: true,
-					cwd: '<%= dirs.js %>/admin/',
-					src: [
-					'*.js',
-					'!*.min.js'
-					],
-					dest: '<%= dirs.js %>/admin/',
-					ext: '.min.js'
-				}]
-			},
-			frontend: {
-				files: [{
-					expand: true,
-					cwd: '<%= dirs.js %>/frontend/',
-					src: [
-					'*.js',
-					'!*.min.js'
-					],
-					dest: '<%= dirs.js %>/frontend/',
-					ext: '.min.js'
-				}]
-			}
-		},
-
-		// JavaScript linting with JSHint.
-		jshint: {
-			options: {
-				reporter: require( 'jshint-stylish' ),
-				globals: {
-					"EO_SCRIPT_DEBUG": false,
-				},
-				'-W099': true, //Mixed spaces and tabs
-				'-W083': true,//TODO Fix functions within loop
-				'-W082': true, //Todo Function declarations should not be placed in blocks
-				'-W020': true, //Read only - error when assigning EO_SCRIPT_DEBUG a value.
-				jshintrc: '.jshintrc'
-			},
-			all: [
-			'<%= dirs.js %>/admin/*.js',
-			'!<%= dirs.js %>/admin/*.min.js',
-			'<%= dirs.js %>/frontend/*.js',
-			'!<%= dirs.js %>/frontend/*.min.js'
-			]
-		},
-
-		// Watch changes for assets.
+		// Watch changes for assets. The script module (assets/js/modules) is shipped as is, with no build step.
 		watch: {
 			css: {
 				files: [
@@ -156,15 +97,6 @@ module.exports = function(grunt) {
 				'<%= dirs.scss %>/frontend/*.scss'
 				],
 				tasks: ['sass', 'rtlcss', 'postcss', 'cssmin']
-			},
-			js: {
-				files: [
-				'<%= dirs.js %>/admin/*js',
-				'<%= dirs.js %>/frontend/*js',
-				'!<%= dirs.js %>/admin/*.min.js',
-				'!<%= dirs.js %>/frontend/*.min.js'
-				],
-				tasks: ['jshint', 'uglify']
 			}
 		},
 
@@ -288,16 +220,7 @@ module.exports = function(grunt) {
 	grunt.registerTask(
         'default',
         [
-		'js',
-        ]
-    );
-
-	grunt.registerTask(
-        'js',
-        [
-		'jshint',
-		'uglify:admin',
-		'uglify:frontend'
+		'css',
         ]
     );
 
@@ -314,7 +237,6 @@ module.exports = function(grunt) {
 	grunt.registerTask(
         'assets',
         [
-		'js',
 		'css'
         ]
     );
@@ -328,7 +250,7 @@ module.exports = function(grunt) {
         ]
     );
 
-	grunt.registerTask( 'dev', [ 'jshint', 'uglify', 'sass' ] );
+	grunt.registerTask( 'dev', [ 'sass' ] );
 	grunt.registerTask( 'build', [ 'replace', 'assets', 'addtextdomain' ] );
 	grunt.registerTask( 'release', [ 'build', 'zip', 'clean' ] );
 

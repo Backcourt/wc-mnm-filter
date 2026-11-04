@@ -10,7 +10,7 @@
  * Text Domain: wc-mnm-filter
  * Domain Path: /languages/
  *
- * Requires at least: 6.2
+ * Requires at least: 6.5
  * Tested up to: 7.1.0
  * Requires PHP: 7.4
  *
@@ -57,7 +57,7 @@ class WC_MNM_Filter {
 	 *
 	 * @var string
 	 */
-	private static $required_mnm = '2.4.0';
+	private static $required_mnm = '3.0.0-alpha.2';
 
 	/**
 	 * Product meta key that stores the filter taxonomy.
@@ -114,6 +114,12 @@ class WC_MNM_Filter {
 			return;
 		}
 
+		// The filter runs on the Interactivity API, with Mix and Match's container store. WordPress 6.5+.
+		if ( ! self::is_supported() ) {
+			add_action( 'admin_notices', array( __CLASS__, 'admin_notice_unsupported' ) );
+			return;
+		}
+
 		/*
 		 * Admin.
 		 */
@@ -145,10 +151,6 @@ class WC_MNM_Filter {
 
 		// Register Scripts.
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'register_scripts' ) );
-
-		// Forms loaded with ajax.
-		add_action( 'wc_quick_view_enqueue_scripts', array( __CLASS__, 'load_scripts' ) );
-		add_action( 'wc_mnm_subscription_editing_enqueue_scripts', array( __CLASS__, 'load_scripts' ) );
 	}
 
 	/**
@@ -160,6 +162,20 @@ class WC_MNM_Filter {
 		}
 		// Translators: %1$s = Plugin name, %2$s = Plugin version, %3$s = Required Mix and Match Plugin version.
 		$message = sprintf( esc_html__( 'To function properly, %1$s %2$s requires WooCommerce Mix and Match version %3$s', 'wc-mnm-filter' ), '<strong>' . esc_html__( 'WooCommerce Mix and Match - Filter by Terms', 'wc-mnm-filter' ) . '</strong>', self::$version, self::$required_mnm );
+		echo '<div class="notice notice-error"><p>' . wp_kses_post( $message ) . '</p></div>';
+	}
+
+	/**
+	 * Warn when WordPress is too old for the Interactivity API, or Mix and Match's container store is missing.
+	 *
+	 * @since 3.0.0
+	 */
+	public static function admin_notice_unsupported() {
+		if ( ! current_user_can( 'activate_plugins' ) ) {
+			return;
+		}
+		// Translators: %1$s = Plugin name, %2$s = Plugin version, %3$s = Required Mix and Match Plugin version.
+		$message = sprintf( esc_html__( '%1$s %2$s requires WordPress 6.5 or newer and WooCommerce Mix and Match %3$s with its container store.', 'wc-mnm-filter' ), '<strong>' . esc_html__( 'WooCommerce Mix and Match - Filter by Terms', 'wc-mnm-filter' ) . '</strong>', self::$version, self::$required_mnm );
 		echo '<div class="notice notice-error"><p>' . wp_kses_post( $message ) . '</p></div>';
 	}
 
@@ -269,14 +285,7 @@ class WC_MNM_Filter {
 		$taxonomy_object = get_taxonomy( $taxonomy );
 		$multiple        = self::supports_multiple_terms( $product );
 
-		// Forms loaded with ajax, ex: quick view, aren't hydrated by the Interactivity API, so they use the jQuery script.
-		$interactive = self::is_interactive() && ! wp_doing_ajax();
-
-		if ( $interactive ) {
-			self::load_module();
-		} else {
-			self::load_scripts();
-		}
+		self::load_module();
 
 		wc_get_template(
 			'single-product/mnm/options-filter.php',
@@ -287,7 +296,6 @@ class WC_MNM_Filter {
 				'terms'          => $terms,
 				'multiple'       => $multiple,
 				'layout'         => $product->get_layout(),
-				'interactive'    => $interactive,
 				'context'        => array(
 					'containerId' => $product->get_id(),
 					'multiple'    => $multiple,
@@ -476,37 +484,14 @@ class WC_MNM_Filter {
 	public static function register_scripts() {
 		$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
 
-		if ( self::is_interactive() ) {
-			$module_path = 'assets/js/modules/wc-mnm-filter.js';
+		$module_path = 'assets/js/modules/wc-mnm-filter.js';
 
-			// Native ES module. Its imports resolve through the import map, so there is no build step.
-			wp_register_script_module(
-				self::MODULE,
-				plugins_url( $module_path, __FILE__ ),
-				array( '@wordpress/interactivity', \Backcourt\MixAndMatch\Interactivity\ContainerStore::MODULE ),
-				WC_Mix_and_Match()->get_file_version( self::plugin_path() . '/' . $module_path, self::$version )
-			);
-		}
-
-		$script_path    = 'assets/js/frontend/wc-mnm-filter' . $suffix . '.js';
-		$script_version = WC_Mix_and_Match()->get_file_version( self::plugin_path() . '/' . $script_path, self::$version );
-
-		wp_register_script( self::HANDLE, plugins_url( $script_path, __FILE__ ), array( 'jquery', 'wc-add-to-cart-mnm' ), $script_version, true );
-
-		wp_localize_script(
-			self::HANDLE,
-			'WC_MNM_FILTER_PARAMS',
-			array(
-				/* translators: %1$d: Number of products shown. %2$d: Total number of products. */
-				'i18n_status'        => __( 'Showing %1$d of %2$d products', 'wc-mnm-filter' ),
-				/* translators: %d: Total number of products. */
-				'i18n_status_all'    => __( 'Showing all %d products', 'wc-mnm-filter' ),
-				/* translators: %d: Number of selected items hidden by the filter. */
-				'i18n_hidden_single' => __( '%d selected item is hidden by the filter.', 'wc-mnm-filter' ),
-				/* translators: %d: Number of selected items hidden by the filter. */
-				'i18n_hidden_plural' => __( '%d selected items are hidden by the filter.', 'wc-mnm-filter' ),
-				'i18n_show_all'      => __( 'Show all', 'wc-mnm-filter' ),
-			)
+		// Native ES module. Its imports resolve through the import map, so there is no build step.
+		wp_register_script_module(
+			self::MODULE,
+			plugins_url( $module_path, __FILE__ ),
+			array( '@wordpress/interactivity', \Backcourt\MixAndMatch\Interactivity\ContainerStore::MODULE ),
+			WC_Mix_and_Match()->get_file_version( self::plugin_path() . '/' . $module_path, self::$version )
 		);
 
 		/**
@@ -530,19 +515,6 @@ class WC_MNM_Filter {
 			wp_register_style( self::HANDLE, false, array(), self::$version );
 			wp_add_inline_style( self::HANDLE, '.wc-mnm-filter[hidden], .wc-mnm-filter [hidden], .mnm_form .wc-mnm-filter-hidden { display: none !important; }' );
 		}
-	}
-
-	/**
-	 * Enqueue the script and stylesheet.
-	 *
-	 * @return void
-	 */
-	public static function load_scripts() {
-		if ( ! wp_script_is( self::HANDLE, 'registered' ) ) {
-			self::register_scripts();
-		}
-		wp_enqueue_style( self::HANDLE );
-		wp_enqueue_script( self::HANDLE );
 	}
 
 	/**
@@ -592,23 +564,14 @@ class WC_MNM_Filter {
 	}
 
 	/**
-	 * Whether the filter runs on the Interactivity API, with Mix and Match's container store.
+	 * Whether the Interactivity API and Mix and Match's container store are available, WordPress 6.5+.
 	 *
 	 * @since 3.0.0
 	 *
 	 * @return bool
 	 */
-	public static function is_interactive() {
-		$supported = class_exists( '\Backcourt\MixAndMatch\Interactivity\ContainerStore' ) && \Backcourt\MixAndMatch\Interactivity\ContainerStore::is_supported();
-
-		/**
-		 * Whether the filter runs on the Interactivity API. Return false to keep the jQuery script.
-		 *
-		 * @since 3.0.0
-		 *
-		 * @param bool $supported True with WordPress 6.5+ and Mix and Match's container store.
-		 */
-		return $supported && (bool) apply_filters( 'wc_mnm_filter_is_interactive', $supported );
+	public static function is_supported() {
+		return class_exists( '\Backcourt\MixAndMatch\Interactivity\ContainerStore' ) && \Backcourt\MixAndMatch\Interactivity\ContainerStore::is_supported();
 	}
 
 	/*-----------------------------------------------------------------------------------*/

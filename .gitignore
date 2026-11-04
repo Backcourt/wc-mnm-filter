@@ -34,7 +34,6 @@ Thumbs.db
 composer.lock
 
 # Assets
-assets/js/**/*.min.js
 assets/css/
 languages/
 
