@@ -42,3 +42,25 @@ Show buttons above a Mix and Match container's child items so shoppers can filte
 * Dev: New `wc_mnm_filter_terms`, `wc_mnm_filter_taxonomies` and `wc_mnm_filter_taxonomy` filters.
 * Dev: Git Updater Lite, prefixed into `vendor-prefixed/` with a Strauss phar, handles updates from GitHub releases. The release workflow uses the latest GitHub actions, skips Composer dev packages, builds the .pot with WP-CLI and takes release notes from this changelog.
 * Dev: Build CSS with Dart Sass instead of node-sass.
+
+= 2.2.0 2024.11.07 =
+* New: Category titles and descriptions are wrapped in a `div`, so they hide and show with their category when categories are used as the container's contents.
+* Fix: Fallbacks for undefined CSS variables.
+
+= 2.1.0 2023.12.12 =
+* Important: Requires Mix and Match 2.4.
+* New: Declare compatibility with HPOS and the Cart and Checkout blocks.
+* Update: The term data attributes moved to the form, for easier filtering.
+* Update: Buttons use the block theme's button classes, with style tweaks for block themes.
+* Fix: The "Filter by" option was added twice in the product settings.
+
+= 2.0.1 2023.11.11 =
+* Dev: Release workflow and `.gitignore` updates.
+
+= 2.0.0 2023.02.28 =
+* Important: Requires Mix and Match 2.0. Back-compatibility hooks were removed.
+* Important: Only one term can be selected at a time by default. Use the `wc_mnm_filters_support_multi_term_filtering` filter to allow several.
+* Update: The template and styles use flex.
+* Update: Empty items are removed entirely.
+* Dev: Script versions follow file changes when debugging.
+* Dev: The release zip name includes the version, for Git Updater.
